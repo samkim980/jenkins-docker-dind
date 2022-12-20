@@ -1,0 +1,47 @@
+version: '1.0'
+services:
+  docker:
+    container_name: jenkins-docker
+    image: docker:dind
+    networks:
+      jenkins:
+        aliases:
+          - docker
+    ports:
+      - target: 2367
+        published: 2367
+        protocol: tcp
+        mode: host
+    environment: 
+      - DOCKER_TLS_CERTDIR=/certs
+    volumes: 
+      - jenkins-docker-certs:/certs/client
+      - jenkins-data:/var/jenkins_home
+      - $HOME:/home
+    privileged: true
+    command: --storage-driver=overlay2
+  blueocean:
+    container_name: jenkins-blueocean
+    image: samkimjenkins-blueocean:2.375.1-1
+    volumes: 
+      - jenkins-data:/var/jenkins_home 
+      - jenkins-docker-certs:/certs/client:ro
+      - $HOME:/home
+    environment:
+      - DOCKER_HOST=tcp://docker:2376 
+      - DOCKER_CERT_PATH=/certs/client
+      - DOCKER_TLS_VERIFY=1
+    ports:
+      - 8080:8080
+      - 50000:50000
+    tty: true
+    networks:
+      - jenkins
+networks:
+  jenkins:
+     external: true
+volumes:
+  jenkins-docker-certs:
+    external: true
+  jenkins-data:
+    external: true
